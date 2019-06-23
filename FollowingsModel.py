@@ -3,7 +3,7 @@ from DataManager import DataManager
 from InstagramAPI import InstagramAPI
 
 
-class FollowingsManager:
+class FollowingsModel:
 
     def __init__(self, client_id: str, instagram_api: InstagramAPI, storage_manager: DataManager):
         self.id = client_id
@@ -58,3 +58,6 @@ class FollowingsManager:
 
     def _set_old_unfollowers_ids(self, ids):
         self.storage.set_known_unfollowed_list(self.id, unfollowed_list=ids)
+
+    def get_authorised_telegram_usernames(self):
+        return self.storage.get_authorised_telegram_usernames()
