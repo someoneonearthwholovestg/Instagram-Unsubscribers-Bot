@@ -13,11 +13,12 @@ class TelegramBot:
     def __init__(self, token: str, commands: dict, callbacks: dict):
         self.token = token
         self.storage = DataManager('config.ini')
-        conn = SocksConnector(socks_ver=SocksVer.SOCKS5,
-                              host='orbtl.s5.opennetwork.cc',
-                              port='999',
-                              username='91945569',
-                              password='XaKz5W8c')
+        # conn = SocksConnector(socks_ver=SocksVer.SOCKS5,
+        #                       host='orbtl.s5.opennetwork.cc',
+        #                       port='999',
+        #                       username='91945569',
+        #                       password='XaKz5W8c')
+        conn = None
         self.session = aiohttp.ClientSession(connector=conn)
         self.BASE_URL = 'https://api.telegram.org/bot{}/'.format(token)
         self.authorized_users = self.storage.get_authorised_telegram_usernames()
@@ -32,6 +33,7 @@ class TelegramBot:
             try:
                 print('Start responding')
                 response: aiohttp.ClientResponse = await self.session.get(update_request)
+                print('Request received')
                 json = await response.json()
                 if json['ok']:
                     await self._dispatch(json['result'])
