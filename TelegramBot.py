@@ -33,7 +33,7 @@ class TelegramBot:
             try:
                 print('Start responding')
                 response: aiohttp.ClientResponse = await self.session.get(update_request)
-                print('Request received')
+                print('response: {}'.format(response))
                 json = await response.json()
                 if json['ok']:
                     await self._dispatch(json['result'])
