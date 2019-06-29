@@ -10,6 +10,9 @@ class TelegramBotResponse:
         self.parse_mode = None
         self.disable_web_page_preview = True
 
+    def __str__(self):
+        return self.text
+
 class InlineKeyboardButton:
 
     def __init__(self, text, callback_data=None):

@@ -68,7 +68,9 @@ Hello!\n
         message = self._list_unsubs(session, on_success=self.new_unfollowers_controller)
         if hasattr(update, 'message'):
             session.message_ids_to_delete += [update.message.message_id]
-        return message
+        res = TelegramBotResponse(message)
+        res.parse_mode = res.PARSE_MODE_MARKDOWN
+        return res
 
     def _list_unsubs(self, session, on_success=None):
         if not session.is_instagram_connected:
@@ -120,7 +122,8 @@ Hello!\n
 
     async def stop_notifying_controller(self, session, update):
         res = self._forget_this_message_and_response(session, update)
-        self.subscribed_sessions.remove(session)
+        if session in self.subscribed_sessions:
+            self.subscribed_sessions.remove(session)
         res.text = "Now you won't be notified if someone unfollows you!"
         return res
 
