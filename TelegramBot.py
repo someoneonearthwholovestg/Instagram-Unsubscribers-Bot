@@ -30,6 +30,7 @@ class TelegramBot:
         while True:
             update_request = self.BASE_URL + 'getUpdates?timeout=10000&offset={}'.format(self.last_offset)
             try:
+                print('Start responding')
                 response: aiohttp.ClientResponse = await self.session.get(update_request)
                 json = await response.json()
                 if json['ok']:
