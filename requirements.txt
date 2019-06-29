@@ -2,5 +2,5 @@ aiohttp==3.5.4
 aiohttp-socks==0.2.2
 InstagramAPI==1.0.2
 requests==2.22.0
-gunicorn-19.9.0
+gunicorn
 configparser
