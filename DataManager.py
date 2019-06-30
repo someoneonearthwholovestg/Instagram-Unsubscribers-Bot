@@ -6,13 +6,6 @@ class DataManager:
         self._config_file = config_file
         self._config = configparser.ConfigParser()
 
-    def get_user_credentials(self):
-        self._config.read(self._config_file)
-        try:
-            return self._config['CREDENTIALS']
-        except KeyError:
-            return {}
-
     def get_known_unfollowed_list(self, USER_ID):
         self._config.read(self._config_file)
         try:
@@ -23,11 +16,11 @@ class DataManager:
 
     def set_known_unfollowed_list(self, USER_ID, unfollowed_list):
         self._config['KNOWN_UNFOLLOWED'] = {USER_ID: unfollowed_list}
-        self.save()
+        self._save()
 
     def set_telegram_bot_last_offset(self, offset):
         self._config['TELEGRAM']['last_offset'] = offset
-        self.save()
+        self._save()
 
     def get_telegram_bot_last_offset(self):
         self._config.read(self._config_file)
@@ -37,7 +30,7 @@ class DataManager:
             return -1
         return r
 
-    def save(self):
+    def _save(self):
         with open(self._config_file, 'w') as configfile:
             self._config.write(configfile)
 

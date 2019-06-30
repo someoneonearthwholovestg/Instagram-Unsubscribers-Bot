@@ -2,6 +2,7 @@ import aiohttp
 from aiohttp_socks import SocksConnector, SocksVer
 from collections import namedtuple
 import keyword
+import logging
 
 from DataManager import DataManager
 from TelegramAppSession import TelegramAppSession
@@ -13,12 +14,11 @@ class TelegramBot:
     def __init__(self, token: str, commands: dict, callbacks: dict):
         self.token = token
         self.storage = DataManager('config.ini')
-        # conn = SocksConnector(socks_ver=SocksVer.SOCKS5,
-        #                       host='orbtl.s5.opennetwork.cc',
-        #                       port='999',
-        #                       username='91945569',
-        #                       password='XaKz5W8c')
-        conn = None
+        conn = SocksConnector(socks_ver=SocksVer.SOCKS5,
+                              host='orbtl.s5.opennetwork.cc',
+                              port='999',
+                              username='91945569',
+                              password='XaKz5W8c')
         self.session = aiohttp.ClientSession(connector=conn)
         self.BASE_URL = 'https://api.telegram.org/bot{}/'.format(token)
         self.authorized_users = self.storage.get_authorised_telegram_usernames()
@@ -27,19 +27,21 @@ class TelegramBot:
         self.callbacks = callbacks
         self.last_offset = self.storage.get_telegram_bot_last_offset()
 
-    async def start_responding(self):
+    async def start_polling(self):
+        logging.info('Start polling')
         while True:
             update_request = self.BASE_URL + 'getUpdates?timeout=10000&offset={}'.format(self.last_offset)
             try:
-                print('Start responding')
                 response: aiohttp.ClientResponse = await self.session.get(update_request)
-                print('response: {}'.format(response))
+                logging.info('Received update from telegram')
                 json = await response.json()
                 if json['ok']:
                     await self._dispatch(json['result'])
                 else:
+                    logging.warning('Incorrect json format')
                     raise Exception('json not ok...')
             except Exception as e:
+                logging.warning('Session closed due to exception: {}'.format(e))
                 await self.session.close()
                 raise e
 
@@ -49,6 +51,7 @@ class TelegramBot:
             self.storage.set_telegram_bot_last_offset(str(self.last_offset))
 
             if not self._authorize(update):
+                logging.info('Not authorised telegram user request denied')
                 return
             update = self._make_object_from_dict(update, type_name='Update')
             session, controller, chat_id = self._get_session_and_controller_and_chat_id(update)

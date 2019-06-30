@@ -32,8 +32,11 @@ class TelegramApp:
         self.bot = TelegramBot(token, commands, callbacks)
         self.subscribed_sessions = set()
 
-    async def start_responding(self):
-        await self.bot.start_responding()
+    async def start_polling(self):
+        await self.bot.start_polling()
+
+    async def start_webhook(self, url, listen, port):
+        pass
 
     async def start_schedule_tasks(self):
         DAY = 24 * 60 * 60
