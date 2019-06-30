@@ -7,14 +7,14 @@ import logging
 from data_managers import FileDataManager, EnvVarsDataManager
 from TelegramAppSession import TelegramAppSession
 from TelegramBotResponse import TelegramBotResponse
-from app import MODE
+from app import MODE, MODE_LOCAL_POLLING
 
 
 class TelegramBot:
 
     def __init__(self, token: str, commands: dict, callbacks: dict):
         self.token = token
-        if MODE == 'dev':
+        if MODE == MODE_LOCAL_POLLING:
             self.storage = FileDataManager()
         else:
             self.storage = EnvVarsDataManager()

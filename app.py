@@ -2,7 +2,9 @@ import asyncio
 import logging
 import os
 
-
+MODE_LOCAL_POLLING = 'local_polling'
+MODE_REMOTE_POLLING = 'remote_polling'
+MODE_REMOTE_WEBHOOK = 'remote_webhook'
 MODE = os.getenv('MODE')
 
 def main():
@@ -12,9 +14,9 @@ def main():
     telegram_app = TelegramApp(TOKEN)
     loop = asyncio.get_event_loop()
 
-    if MODE == 'dev':
+    if MODE == MODE_LOCAL_POLLING or MODE == MODE_REMOTE_POLLING:
         loop.create_task(telegram_app.start_polling())
-    elif MODE == 'prod' or MODE == 'debug_webhook':
+    elif MODE == MODE_REMOTE_WEBHOOK:
         PORT = int(os.environ.get("PORT", "8443"))
         HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME")
         loop.create_task(telegram_app.start_webhook(url='https://{}.herokuapp.com/{}'.format(HEROKU_APP_NAME, TOKEN),
