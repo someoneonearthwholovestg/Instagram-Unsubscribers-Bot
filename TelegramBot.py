@@ -4,16 +4,20 @@ from collections import namedtuple
 import keyword
 import logging
 
-from DataManager import DataManager
+from data_managers import FileDataManager, EnvVarsDataManager
 from TelegramAppSession import TelegramAppSession
 from TelegramBotResponse import TelegramBotResponse
+from app import MODE
 
 
 class TelegramBot:
 
     def __init__(self, token: str, commands: dict, callbacks: dict):
         self.token = token
-        self.storage = DataManager('config.ini')
+        if MODE == 'dev':
+            self.storage = FileDataManager()
+        else:
+            self.storage = EnvVarsDataManager()
         conn = SocksConnector(socks_ver=SocksVer.SOCKS5,
                               host='orbtl.s5.opennetwork.cc',
                               port='999',

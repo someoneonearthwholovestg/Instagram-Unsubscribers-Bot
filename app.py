@@ -4,13 +4,6 @@ import os
 
 
 MODE = os.getenv('MODE')
-if MODE == 'debug_webhook' or MODE == 'dev':
-    level = logging.INFO
-else:
-    level = logging.WARNING
-
-logging.basicConfig(level=level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-
 
 def main():
     from TelegramApp import TelegramApp
@@ -36,5 +29,11 @@ def main():
     loop.run_forever()
 
 if __name__ == '__main__':
+    if MODE == 'debug_webhook' or MODE == 'dev':
+        level = logging.INFO
+    else:
+        level = logging.WARNING
+
+    logging.basicConfig(level=level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     main()
 
