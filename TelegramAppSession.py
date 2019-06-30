@@ -24,4 +24,4 @@ class TelegramAppSession:
     is_instagram_connected = property()
     @is_instagram_connected.getter
     def is_instagram_connected(self) -> bool:
-        return self.instagram_client is not None
+        return self.instagram_client is not None and self.instagram_client.api.isLoggedIn

@@ -21,7 +21,7 @@ class TelegramApp:
             '/stop_notifying': self.stop_notifying_controller,
             '/logout_instagram': self.logout_instagram_controller,
             '/help': self.start_controller,
-            'default': lambda x, y: 'No such a command, use /start to get help'
+            'default': self.default_controller,
         }
         callbacks = {
             self.check_unfollowers_callback: self.new_unfollowers_controller,
@@ -77,7 +77,7 @@ Hello!\n
 
     def _list_unsubs(self, session, on_success=None):
         if not session.is_instagram_connected:
-            return self._request_connect_instagram(session, on_success)
+            return self._request_connect_instagram(session, on_success=on_success)
         instagram_client = session.instagram_client
         new_unfollowers = list(map(lambda x: x['username'], instagram_client.get_new_unfollowers(update=True)))
         unfollowers = map(lambda x: x['username'], instagram_client.get_unfollowers(update=False))
@@ -90,30 +90,36 @@ Hello!\n
             all_unfollowers_str += '[{}](https://instagram.com/{})'.format(entry, entry) + '\n'
         return 'new unfollowers:\n' + new_unfollowers_str + '\nall unfollowers:\n' + all_unfollowers_str
 
-    def _request_connect_instagram(self, client: TelegramAppSession, on_success=None):
-        client.set_pending_controller(self.connect_instagram_controller, on_success=on_success)
-        res = TelegramBotResponse('Enter your Instagram login and password divided by single space')
+    def _request_connect_instagram(self, session: TelegramAppSession, update=None, on_success=None):
+        if update:
+            res = self._forget_this_message_and_response(session, update)
+        else:
+            res = TelegramBotResponse()
+        session.set_pending_controller(self.connect_instagram_controller, on_success=on_success)
+        res.text = 'Enter your Instagram login and password divided by single space'
         res.is_to_be_deleted = True
         return res
 
     async def connect_instagram_controller(self, session, update, on_success_controller: callable = None):
+        res = self._forget_this_message_and_response(session, update)
         try:
             login, password = update.message.text.split(' ')[0:2]
         except:
-            text = 'something wrong...'
-        else:
-            if session.connect_instagram(login, password):
-                if on_success_controller:
-                    result = await on_success_controller(session, update)
-                    text = result.text if type(result) is TelegramBotResponse else result
-                else:
-                    text = 'Successfully logged in!'
+            res.text = 'Incorrect login/password :('
+            return res
+
+        if session.connect_instagram(login, password):
+            if on_success_controller:
+                result = await on_success_controller(session, update)
+                text = result.text if type(result) is TelegramBotResponse else result
             else:
-                text = 'something wrong...'
-        resp = TelegramBotResponse(text=text)
-        resp.flush_delete_messages = True
-        resp.parse_mode = TelegramBotResponse.PARSE_MODE_MARKDOWN
-        return resp
+                text = 'Successfully logged in!'
+        else:
+            text = 'Incorrect login/password :('
+        res.text = text
+        res.flush_delete_messages = True
+        res.parse_mode = TelegramBotResponse.PARSE_MODE_MARKDOWN
+        return res
 
     async def start_notifying_controller(self, session, update):
         if not session.is_instagram_connected:
@@ -140,6 +146,9 @@ Hello!\n
             message = 'Your Instagram account is forgotten now.'
         res.text = message
         return res
+
+    async def default_controller(self, session, update):
+        return 'No such a command, use /start to get help'
 
     @staticmethod
     def _forget_this_message_and_response(session, update) -> TelegramBotResponse:

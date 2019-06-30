@@ -73,12 +73,10 @@ class TelegramBot:
                 pending_controller = session.pending_controller
                 session.pending_controller = None
                 bot_response = await pending_controller(session, update)
-                pass
             elif controller is None:
                 return
             else:
                 bot_response = await controller(session, update)
-                pass
 
             if issubclass(type(bot_response), TelegramBotResponse):
                 await self._handle_response(session=session, response=bot_response)
@@ -191,8 +189,6 @@ class TelegramBot:
         r = await self.session.get(
             self.BASE_URL + 'deleteMessage?chat_id={}&message_id={}'.format(chat_id, message_id)
         )
-        if r.status >= 400:
-            raise Exception(r.reason)
 
     async def answer_callback_query(self, query_id):
         await self.session.get(
@@ -201,5 +197,5 @@ class TelegramBot:
 
     async def set_typing(self, peer, typing: bool):
         await self.session.get(
-            self.BASE_URL + 'setTyping?peer={}&typing={}'.format(peer, typing)
+            self.BASE_URL + 'messages.setTyping?peer={}&typing={}'.format(peer, typing)
         )
