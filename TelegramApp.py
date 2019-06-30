@@ -123,7 +123,7 @@ Hello!\n
 
     async def start_notifying_controller(self, session, update):
         if not session.is_instagram_connected:
-            return self._request_connect_instagram(session, self.start_notifying_controller)
+            return self._request_connect_instagram(session, on_success=self.start_notifying_controller)
         res = self._forget_this_message_and_response(session, update)
         self.subscribed_sessions.add(session)
         res.text = 'Now you will be notified in 24 hours after someone unfollows you!'
