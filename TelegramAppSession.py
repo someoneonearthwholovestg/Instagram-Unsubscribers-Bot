@@ -9,6 +9,7 @@ class TelegramAppSession:
         self.pending_controller: callable = None
         self.instagram_client: InstagramClientModel = None
         self.message_ids_to_delete = []
+        self.answering_callback_query = None
 
     def set_pending_controller(self, pending, on_success):
         self.pending_controller = lambda x, y: pending(x, y, on_success)

@@ -31,7 +31,7 @@ def main():
     loop.run_forever()
 
 if __name__ == '__main__':
-    if MODE == 'debug_webhook' or MODE == 'dev':
+    if MODE == MODE_LOCAL_POLLING or MODE == MODE_REMOTE_POLLING:
         level = logging.INFO
     else:
         level = logging.WARNING

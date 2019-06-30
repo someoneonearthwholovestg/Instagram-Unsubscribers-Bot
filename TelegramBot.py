@@ -16,13 +16,15 @@ class TelegramBot:
         self.token = token
         if MODE == MODE_LOCAL_POLLING:
             self.storage = FileDataManager()
+            conn = SocksConnector(socks_ver=SocksVer.SOCKS5,
+                                  host='orbtl.s5.opennetwork.cc',
+                                  port=999,
+                                  username='91945569',
+                                  password='XaKz5W8c')
+            # conn = None
         else:
             self.storage = EnvVarsDataManager()
-        conn = SocksConnector(socks_ver=SocksVer.SOCKS5,
-                              host='orbtl.s5.opennetwork.cc',
-                              port='999',
-                              username='91945569',
-                              password='XaKz5W8c')
+            conn = None
         self.session = aiohttp.ClientSession(connector=conn)
         self.BASE_URL = 'https://api.telegram.org/bot{}/'.format(token)
         self.authorized_users = self.storage.get_authorised_telegram_usernames()
@@ -57,8 +59,12 @@ class TelegramBot:
             if not self._authorize(update):
                 logging.info('Not authorised telegram user request denied')
                 return
+
             update = self._make_object_from_dict(update, type_name='Update')
             session, controller, chat_id = self._get_session_and_controller_and_chat_id(update)
+
+            await self.set_typing(chat_id, True)
+
             if session is None:
                 print('something very bad happened: session cant be created')
                 return
@@ -77,7 +83,10 @@ class TelegramBot:
             if issubclass(type(bot_response), TelegramBotResponse):
                 await self._handle_response(session=session, response=bot_response)
             elif type(bot_response) is str:
-                await self.send_message(bot_response, chat_id=chat_id)
+                resp = TelegramBotResponse(bot_response)
+                await self._handle_response(session=session, response=resp)
+
+            await self.set_typing(chat_id, False)
 
     def _get_session_and_controller_and_chat_id(self, update) -> (TelegramAppSession, callable, str):
         session = None
@@ -94,6 +103,7 @@ class TelegramBot:
         elif hasattr(update, 'callback_query'):
             chat_id = update.callback_query.from_.id
             session = self._find_or_create_session(chat_id, update.callback_query.from_.username)
+            session.answering_callback_query = update.callback_query.id
             command = update.callback_query.data
             chat_id = update.callback_query.from_.id
             if command in self.callbacks:
@@ -140,6 +150,10 @@ class TelegramBot:
         if args == '':
             args = None
         res = await self.send_message(response.text, args=args, chat_id=session.chat_id)
+
+        if session.answering_callback_query is not None:
+            await self.answer_callback_query(session.answering_callback_query)
+
         if response.is_to_be_deleted:
             json = await res.json()
             session.message_ids_to_delete += [json['result']['message_id']]
@@ -163,7 +177,7 @@ class TelegramBot:
             type_name = type_name + '_'
         return namedtuple(type_name, field_names)(*update_dict.values())
 
-    async def send_message(self, message, chat_id, args=None,):
+    async def send_message(self, message, chat_id, args=None):
         request = self.BASE_URL + 'sendMessage?chat_id={}&text={}'.format(chat_id, message)
         if args:
             request += args
@@ -179,3 +193,13 @@ class TelegramBot:
         )
         if r.status >= 400:
             raise Exception(r.reason)
+
+    async def answer_callback_query(self, query_id):
+        await self.session.get(
+            self.BASE_URL + 'answerCallbackQuery?callback_query_id={}'.format(query_id)
+        )
+
+    async def set_typing(self, peer, typing: bool):
+        await self.session.get(
+            self.BASE_URL + 'setTyping?peer={}&typing={}'.format(peer, typing)
+        )
