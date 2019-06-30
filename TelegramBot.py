@@ -63,8 +63,6 @@ class TelegramBot:
             update = self._make_object_from_dict(update, type_name='Update')
             session, controller, chat_id = self._get_session_and_controller_and_chat_id(update)
 
-            await self.set_typing(chat_id, True)
-
             if session is None:
                 print('something very bad happened: session cant be created')
                 return
@@ -83,8 +81,6 @@ class TelegramBot:
             elif type(bot_response) is str:
                 resp = TelegramBotResponse(bot_response)
                 await self._handle_response(session=session, response=resp)
-
-            await self.set_typing(chat_id, False)
 
     def _get_session_and_controller_and_chat_id(self, update) -> (TelegramAppSession, callable, str):
         session = None
@@ -195,7 +191,7 @@ class TelegramBot:
             self.BASE_URL + 'answerCallbackQuery?callback_query_id={}'.format(query_id)
         )
 
-    async def set_typing(self, peer, typing: bool):
+    async def set_typing(self, peer):
         await self.session.get(
-            self.BASE_URL + 'messages.setTyping?peer={}&typing={}'.format(peer, typing)
+            self.BASE_URL + 'sendChatAction?chat_id={}&action=typing'.format(peer)
         )

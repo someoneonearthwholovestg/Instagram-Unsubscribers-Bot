@@ -43,7 +43,7 @@ class TelegramApp:
         while True:
             t_start = time()
             for session in self.subscribed_sessions:
-                message = self._list_unsubs(session)
+                message = await self._list_unsubs(session)
                 await self.bot.send_message(message, session.chat_id)
             time_executed = time() - t_start
             rest = DAY - time_executed
@@ -68,16 +68,17 @@ Hello!\n
 
 
     async def new_unfollowers_controller(self, session: TelegramAppSession, update):
-        message = self._list_unsubs(session, on_success=self.new_unfollowers_controller)
+        message = await self._list_unsubs(session, on_success=self.new_unfollowers_controller)
         if hasattr(update, 'message'):
             session.message_ids_to_delete += [update.message.message_id]
         res = TelegramBotResponse(message)
         res.parse_mode = res.PARSE_MODE_MARKDOWN
         return res
 
-    def _list_unsubs(self, session, on_success=None):
+    async def _list_unsubs(self, session, on_success=None):
         if not session.is_instagram_connected:
             return self._request_connect_instagram(session, on_success=on_success)
+        await self.bot.set_typing(session.chat_id)
         instagram_client = session.instagram_client
         new_unfollowers = list(map(lambda x: x['username'], instagram_client.get_new_unfollowers(update=True)))
         unfollowers = map(lambda x: x['username'], instagram_client.get_unfollowers(update=False))
@@ -107,7 +108,7 @@ Hello!\n
         except:
             res.text = 'Incorrect login/password :('
             return res
-
+        await self.bot.set_typing(session.chat_id)
         if session.connect_instagram(login, password):
             if on_success_controller:
                 result = await on_success_controller(session, update)
