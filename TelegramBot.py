@@ -172,6 +172,8 @@ class TelegramBot:
         return namedtuple(type_name, field_names)(*update_dict.values())
 
     async def send_message(self, message, chat_id, args=None):
+        if message == '':
+            return
         request = self.BASE_URL + 'sendMessage?chat_id={}&text={}'.format(chat_id, message)
         if args:
             request += args

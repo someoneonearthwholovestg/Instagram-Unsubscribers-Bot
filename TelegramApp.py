@@ -80,22 +80,32 @@ Hello!\n
             return self._request_connect_instagram(session, on_success=on_success)
         await self.bot.set_typing(session.chat_id)
         instagram_client = session.instagram_client
-        new_unfollowers = list(map(lambda x: x['username'], instagram_client.get_new_unfollowers(update=True)))
-        unfollowers = map(lambda x: x['username'], instagram_client.get_unfollowers(update=False))
+
+        old_unfollowers = map(lambda x: x['username'], instagram_client.get_unfollowers(update=False,
+                                                                                        update_old=True))
+        new_unfollowers = list(map(lambda x: x['username'], instagram_client.get_new_unfollowers(update=True,
+                                                                                                 update_old=False)))
 
         new_unfollowers_str = ''
         for entry in new_unfollowers:
             new_unfollowers_str += '[{}](https://instagram.com/{})'.format(entry, entry) + '\n'
-        all_unfollowers_str = ''
-        for entry in unfollowers:
-            all_unfollowers_str += '[{}](https://instagram.com/{})'.format(entry, entry) + '\n'
-        return 'new unfollowers:\n' + new_unfollowers_str + '\nall unfollowers:\n' + all_unfollowers_str
+        old_unfollowers_str = ''
+        for entry in old_unfollowers:
+            old_unfollowers_str += '[{}](https://instagram.com/{})'.format(entry, entry) + '\n'
+
+        if old_unfollowers_str != '':
+            old_unfollowers_str = '\nold unfollowers:\n' + old_unfollowers_str
+        if new_unfollowers_str != '':
+            new_unfollowers_str = 'new unfollowers:\n' + new_unfollowers_str
+
+        return new_unfollowers_str + old_unfollowers_str
 
     def _request_connect_instagram(self, session: TelegramAppSession, update=None, on_success=None):
         if update:
             res = self._forget_this_message_and_response(session, update)
         else:
             res = TelegramBotResponse()
+            res.is_to_be_deleted = True
         session.set_pending_controller(self.connect_instagram_controller, on_success=on_success)
         res.text = 'Enter your Instagram login and password divided by single space'
         res.is_to_be_deleted = True
