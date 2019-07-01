@@ -26,16 +26,16 @@ def main():
         loop.create_task(telegram_app.start_polling())
         loop.create_task(telegram_app.start_schedule_tasks())
     elif MODE == MODE_REMOTE_POLLING:
-        loop.create_task(launch_reloadable_app(telegram_app.start_polling()))
-        loop.create_task(launch_reloadable_app(telegram_app.start_schedule_tasks()))
+        loop.create_task(launch_reloadable_app(telegram_app.start_polling))
+        loop.create_task(launch_reloadable_app(telegram_app.start_schedule_tasks))
     elif MODE == MODE_REMOTE_WEBHOOK:
         logging.exception('Webhooks not implemented')
         PORT = int(os.environ.get("PORT", "8443"))
         HEROKU_APP_NAME = os.environ.get("HEROKU_APP_NAME")
-        loop.create_task(telegram_app.start_webhook(url='https://{}.herokuapp.com/{}'.format(HEROKU_APP_NAME, TOKEN),
-                                                    listen='0.0.0.0',
-                                                    port=PORT))
-        loop.create_task(launch_reloadable_app(telegram_app.start_schedule_tasks()))
+        # loop.create_task(telegram_app.start_webhook(url='https://{}.herokuapp.com/{}'.format(HEROKU_APP_NAME, TOKEN),
+        #                                             listen='0.0.0.0',
+        #                                             port=PORT))
+        # loop.create_task(launch_reloadable_app(telegram_app.start_schedule_tasks()))
     else:
         logging.error('No MODE specified!')
         exit(1)
