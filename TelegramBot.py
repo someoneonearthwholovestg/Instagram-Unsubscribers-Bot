@@ -250,3 +250,4 @@ class TelegramBotV2:
 
 
 class Message:
+    pass
