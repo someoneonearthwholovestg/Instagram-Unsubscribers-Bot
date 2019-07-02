@@ -80,18 +80,14 @@ Hello!\n
             return self._request_connect_instagram(session, on_success=on_success)
         await self.bot.set_typing(session.chat_id)
         instagram_client = session.instagram_client
-
-        old_unfollowers = map(lambda x: x['username'], instagram_client.get_unfollowers(update=False,
-                                                                                        update_old=True))
-        new_unfollowers = list(map(lambda x: x['username'], instagram_client.get_new_unfollowers(update=True,
-                                                                                                 update_old=False)))
+        instagram_client.update()
 
         new_unfollowers_str = ''
-        for entry in new_unfollowers:
-            new_unfollowers_str += '[{}](https://instagram.com/{})'.format(entry, entry) + '\n'
+        for follower in instagram_client.new_unfollowers:
+            new_unfollowers_str += '[{}](https://instagram.com/{})'.format(follower.username, follower.username) + '\n'
         old_unfollowers_str = ''
-        for entry in old_unfollowers:
-            old_unfollowers_str += '[{}](https://instagram.com/{})'.format(entry, entry) + '\n'
+        for follower in instagram_client.old_unfollowers:
+            old_unfollowers_str += '[{}](https://instagram.com/{})'.format(follower.username, follower.username) + '\n'
 
         if old_unfollowers_str != '':
             old_unfollowers_str = '\nold unfollowers:\n' + old_unfollowers_str

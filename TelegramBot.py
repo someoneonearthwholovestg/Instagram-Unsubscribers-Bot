@@ -1,13 +1,12 @@
 import aiohttp
 from aiohttp_socks import SocksConnector, SocksVer
-from collections import namedtuple
-import keyword
 import logging
 
 from data_managers import FileDataManager, EnvVarsDataManager
 from TelegramAppSession import TelegramAppSession
 from TelegramBotResponse import TelegramBotResponse
 from app import MODE, MODE_LOCAL_POLLING
+from utils import make_object_from_dict
 
 
 class TelegramBot:
@@ -47,7 +46,7 @@ class TelegramBot:
                     logging.warning('Incorrect json format')
                     raise Exception('json not ok...')
             except Exception as e:
-                logging.warning('Session closed due to exception: {}'.format(e))
+                logging.exception('Session closed due to exception: {}'.format(e))
                 await self.session.close()
                 raise e
 
@@ -60,7 +59,7 @@ class TelegramBot:
                 logging.info('Not authorised telegram user request denied')
                 return
 
-            update = self._make_object_from_dict(update, type_name='Update')
+            update = make_object_from_dict(update, type_name='Update')
             session, controller, chat_id = self._get_session_and_controller_and_chat_id(update)
 
             if session is None:
@@ -161,16 +160,6 @@ class TelegramBot:
                    and update['callback_query']['message']['chat']['type'] == 'private'
         return False
 
-    def _make_object_from_dict(self, update_dict: dict, type_name: str):
-        for k, v in update_dict.items():
-            if issubclass(dict, type(v)):
-                update_dict[k] = self._make_object_from_dict(v, type_name=str(k))
-
-        field_names = list(map(lambda x: x + '_' if keyword.iskeyword(x) else x, update_dict.keys()))
-        if keyword.iskeyword(type_name):
-            type_name = type_name + '_'
-        return namedtuple(type_name, field_names)(*update_dict.values())
-
     async def send_message(self, message, chat_id, args=None):
         if message == '':
             return
@@ -197,3 +186,67 @@ class TelegramBot:
         await self.session.get(
             self.BASE_URL + 'sendChatAction?chat_id={}&action=typing'.format(peer)
         )
+
+
+class TelegramBotV2:
+
+    def __init__(self, token: str, commands: dict, callbacks: dict):
+        self.token = token
+        if MODE == MODE_LOCAL_POLLING:
+            self.storage = FileDataManager()
+            conn = SocksConnector(socks_ver=SocksVer.SOCKS5,
+                                  host='orbtl.s5.opennetwork.cc',
+                                  port=999,
+                                  username='91945569',
+                                  password='XaKz5W8c')
+            # conn = None
+        else:
+            self.storage = EnvVarsDataManager()
+            conn = None
+        self.session = aiohttp.ClientSession(connector=conn)
+        self.BASE_URL = 'https://api.telegram.org/bot{}/'.format(token)
+        self.authorized_users = self.storage.get_authorised_telegram_usernames()
+        self.known_sessions = set()
+        self.commands = commands
+        self.callbacks = callbacks
+        self.last_offset = self.storage.get_telegram_bot_last_offset()
+
+    async def start_polling(self):
+        logging.info('Start polling')
+        while True:
+            update_request = self.BASE_URL + 'getUpdates?timeout=10000&offset={}'.format(self.last_offset)
+            try:
+                response: aiohttp.ClientResponse = await self.session.get(update_request)
+                logging.info('Received update from telegram')
+                json = await response.json()
+                if json['ok']:
+                    for update in json['result']:
+                        await self._serve_tg_response(update)
+                else:
+                    logging.exception('Incorrect json format: {}'.format(json))
+            finally:
+                logging.exception('Session closed with emergency')
+                await self.session.close()
+
+    async def _serve_tg_response(self, update_json):
+        self.last_offset = int(update_json['update_id']) + 1
+        self.storage.set_telegram_bot_last_offset(str(self.last_offset))
+
+        if not self._authorize(update_json):
+            logging.info('Not authorised telegram user request denied')
+            return
+
+        update = make_object_from_dict(update_json, type_name='Update')
+
+
+    def _authorize(self, update_json):
+        if 'message' in update_json:
+            return update_json['message']['from']['username'] in self.authorized_users \
+                   and update_json['message']['chat']['type'] == 'private'
+        if 'callback_query' in update_json:
+            return update_json['callback_query']['from']['username'] in self.authorized_users \
+                   and update_json['callback_query']['message']['chat']['type'] == 'private'
+        return False
+
+
+class Message:
