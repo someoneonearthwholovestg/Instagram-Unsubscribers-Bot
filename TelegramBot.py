@@ -1,11 +1,12 @@
-import aiohttp
-from aiohttp_socks import SocksConnector, SocksVer
 import logging
 
-from data_managers import FileDataManager, EnvVarsDataManager
+import aiohttp
+from aiohttp_socks import SocksConnector, SocksVer
+
 from TelegramAppSession import TelegramAppSession
 from TelegramBotResponse import TelegramBotResponse
 from app import MODE, MODE_LOCAL_POLLING
+from data_managers import FileDataManager, EnvVarsDataManager
 from utils import make_object_from_dict
 
 
@@ -15,40 +16,34 @@ class TelegramBot:
         self.token = token
         if MODE == MODE_LOCAL_POLLING:
             self.storage = FileDataManager()
-            conn = SocksConnector(socks_ver=SocksVer.SOCKS5,
-                                  host='orbtl.s5.opennetwork.cc',
-                                  port=999,
-                                  username='91945569',
-                                  password='XaKz5W8c')
+            self.conn = SocksConnector(socks_ver=SocksVer.SOCKS5,
+                                       host='orbtl.s5.opennetwork.cc',
+                                       port=999,
+                                       username='91945569',
+                                       password='XaKz5W8c')
             # conn = None
         else:
             self.storage = EnvVarsDataManager()
-            conn = None
-        self.session = aiohttp.ClientSession(connector=conn)
+            self.conn = None
         self.BASE_URL = 'https://api.telegram.org/bot{}/'.format(token)
         self.authorized_users = self.storage.get_authorised_telegram_usernames()
         self.known_sessions = set()
         self.commands = commands
         self.callbacks = callbacks
         self.last_offset = self.storage.get_telegram_bot_last_offset()
+        self.session = None
 
     async def start_polling(self):
         logging.info('Start polling')
-        while True:
-            update_request = self.BASE_URL + 'getUpdates?timeout=10000&offset={}'.format(self.last_offset)
-            try:
-                response: aiohttp.ClientResponse = await self.session.get(update_request)
-                logging.info('Received update from telegram')
-                json = await response.json()
-                if json['ok']:
-                    await self._dispatch(json['result'])
-                else:
-                    logging.warning('Incorrect json format')
-                    raise Exception('json not ok...')
-            except Exception as e:
-                logging.exception('Session closed due to exception: {}'.format(e))
-                await self.session.close()
-                raise e
+        async with aiohttp.ClientSession(connector=self.conn) as session:
+            self.session = session
+            while True:
+                update_request = self.BASE_URL + 'getUpdates?timeout=10000&offset={}'.format(self.last_offset)
+                async with session.get(update_request) as response:
+                    logging.info('Received update from telegram')
+                    json = await response.json()
+                    if json['ok']:
+                        await self._dispatch(json['result'])
 
     async def _dispatch(self, results):
         for update in results:
