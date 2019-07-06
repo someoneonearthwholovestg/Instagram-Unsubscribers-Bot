@@ -71,10 +71,10 @@ class TelegramBot:
                 bot_response = await controller(session, update)
 
             if issubclass(type(bot_response), TelegramBotResponse):
-                await self._handle_response(session=session, response=bot_response)
+                await self.send_message(session=session, response=bot_response)
             elif type(bot_response) is str:
                 resp = TelegramBotResponse(bot_response)
-                await self._handle_response(session=session, response=resp)
+                await self.send_message(session=session, response=resp)
 
     def _get_session_and_controller_and_chat_id(self, update) -> (TelegramAppSession, callable, str):
         session = None
@@ -108,7 +108,7 @@ class TelegramBot:
             self.known_sessions.add(session)
         return session
 
-    async def _handle_response(self, session: TelegramAppSession, response: TelegramBotResponse):
+    async def send_message(self, session: TelegramAppSession, response: TelegramBotResponse):
         args = ''
 
         if response.flush_delete_messages:
@@ -137,7 +137,7 @@ class TelegramBot:
 
         if args == '':
             args = None
-        res = await self.send_message(response.text, args=args, chat_id=session.chat_id)
+        res = await self._send_message(response.text, args=args, chat_id=session.chat_id)
 
         if session.answering_callback_query is not None:
             await self.answer_callback_query(session.answering_callback_query)
@@ -155,7 +155,7 @@ class TelegramBot:
                    and update['callback_query']['message']['chat']['type'] == 'private'
         return False
 
-    async def send_message(self, message, chat_id, args=None):
+    async def _send_message(self, message, chat_id, args=None):
         if message == '':
             return
         request = self.BASE_URL + 'sendMessage?chat_id={}&text={}'.format(chat_id, message)

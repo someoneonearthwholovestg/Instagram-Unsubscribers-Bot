@@ -1,8 +1,8 @@
-from time import time
 import asyncio
+from time import time
 
-from TelegramBot import TelegramBot
 from TelegramAppSession import TelegramAppSession
+from TelegramBot import TelegramBot
 from TelegramBotResponse import TelegramBotResponse, InlineKeyboardButton
 
 
@@ -44,7 +44,9 @@ class TelegramApp:
             t_start = time()
             for session in self.subscribed_sessions:
                 message = await self._list_unsubs(session)
-                await self.bot.send_message(message, session.chat_id)
+                response = TelegramBotResponse(message)
+                await self.bot.send_message(session=session,
+                                            response=response)
             time_executed = time() - t_start
             rest = DAY - time_executed
             rest = rest if rest > 0 else DAY
