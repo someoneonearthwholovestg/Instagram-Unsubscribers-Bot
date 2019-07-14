@@ -16,18 +16,17 @@ async def launch_reloadable_app(app):
             await asyncio.sleep(60)
 
 def main():
-    from TelegramApp import TelegramApp
+    from telegram_bot.telegram_app import scheduler
+    from telegram_bot.telegram_app import app as telegram_app
 
-    TOKEN = os.getenv('TOKEN')
-    telegram_app = TelegramApp(TOKEN)
     loop = asyncio.get_event_loop()
 
     if MODE == MODE_LOCAL_POLLING:
         loop.create_task(telegram_app.start_polling())
-        loop.create_task(telegram_app.start_schedule_tasks())
+        loop.create_task(scheduler.start(60 * 60 * 24))
     elif MODE == MODE_REMOTE_POLLING:
         loop.create_task(launch_reloadable_app(telegram_app.start_polling))
-        loop.create_task(launch_reloadable_app(telegram_app.start_schedule_tasks))
+        loop.create_task(launch_reloadable_app(scheduler.start))
     elif MODE == MODE_REMOTE_WEBHOOK:
         logging.exception('Webhooks not implemented')
         PORT = int(os.environ.get("PORT", "8443"))

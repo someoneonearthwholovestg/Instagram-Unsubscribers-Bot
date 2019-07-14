@@ -1,25 +1,32 @@
-from InstagramClientModel import InstagramClientModel
+from time import time
+
+from instagram_client.InstagramClientModel import InstagramClientModel
 
 
-class TelegramAppSession:
+class TelegramBotSession:
 
     def __init__(self, chat_id: str, username: str):
         self.chat_id = chat_id
         self.username = username
-        self.pending_controller: callable = None
+        self.pending_controllers = []
         self.instagram_client: InstagramClientModel = None
         self.message_ids_to_delete = []
         self.answering_callback_query = None
 
-    def set_pending_controller(self, pending, on_success):
-        self.pending_controller = lambda x, y: pending(x, y, on_success)
+        self.previous_controller = None
+
+        self.time_instagram_connected = None
 
     def connect_instagram(self, login, password) -> bool:
         self.instagram_client = InstagramClientModel(login, password)
-        return self.instagram_client.login()
+        success = self.instagram_client.login()
+        if success:
+            self.time_instagram_connected = time()
+        return success
 
     def disconnect_instagram(self):
         self.instagram_client = None
+        self.time_instagram_connected = None
 
     is_instagram_connected = property()
     @is_instagram_connected.getter

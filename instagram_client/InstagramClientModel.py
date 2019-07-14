@@ -1,6 +1,6 @@
-import collections
-from InstagramAPI import InstagramAPI
 import logging
+
+from InstagramAPI import InstagramAPI
 
 from utils import make_object_from_dict
 
