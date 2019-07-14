@@ -168,7 +168,7 @@ class TelegramBot:
         return r
 
     async def delete_message(self, message_id, chat_id):
-        r = await self.session.get(
+        await self.session.get(
             self.BASE_URL + 'deleteMessage?chat_id={}&message_id={}'.format(chat_id, message_id)
         )
 

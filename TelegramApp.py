@@ -21,6 +21,7 @@ class TelegramApp:
             '/stop_notifying': self.stop_notifying_controller,
             '/logout_instagram': self.logout_instagram_controller,
             '/help': self.start_controller,
+            '/test': self.check_instagram_api_status,
             'default': self.default_controller,
         }
         callbacks = {
@@ -155,6 +156,22 @@ Hello!\n
             message = 'Your Instagram account is forgotten now.'
         res.text = message
         return res
+
+    async def check_instagram_api_status(self, session: TelegramAppSession, update):
+        res = self._forget_this_message_and_response(session, update)
+
+        if session.instagram_client is None:
+            message = 'session.instagram_client is None'
+        elif not session.instagram_client.api.isLoggedIn:
+            message = 'session.instagram_client.api.isLoggedIn is False. Relogin?'
+        else:
+            message = 'session.instagram_client.api.isLoggedIn is True. Performing check request to api.\n'
+            session.instagram_client.api.getProfileData()
+            r = session.instagram_client.api.LastResponse
+            message += 'response status code: {}'.format(r.status_code)
+        res.text = message
+        return res
+
 
     async def default_controller(self, session, update):
         return 'No such a command, use /start to get help'
